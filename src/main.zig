@@ -10,12 +10,12 @@ export fn game_init() void {
 
     // rl.setTargetFPS(60); // Set our game to run at 60 frames-per-second
     // ขนาดอะไรก็ได้ canvas จะ scale เอง
-    rl.initWindow(1024, 720, "raylib + zig + wasm");
+    rl.initWindow(1024, 720, "");
 
     // บนเว็บ SetTargetFPS ไม่มีผล แต่ไม่ใส่ก็โดนมองแรง
     rl.setTargetFPS(60);
 
-    @memmove(game_title[0..11], "Game Title\x00");
+    game_set_title("Game Title");
 }
 
 var time: f32 = 0;
@@ -45,6 +45,12 @@ export fn game_update(dt: f32) void {
     rl.drawFPS(50, 50);
 }
 
+export fn game_set_title(ptr: [*:0]const u8) void {
+    const slice = zPointerToZSlice(ptr);
+    rl.setWindowTitle(slice);
+    copyZSlice(&game_title, slice);
+}
+
 export fn game_test_logging() i32 {
     emscripten_log(1, "Test log 1\x00");
     emscripten_console_log("Test console.log");
@@ -66,4 +72,17 @@ export fn game_test_c() f32 {
 }
 export fn game_test_d() f32 {
     return 3.14;
+}
+
+pub fn copyZSlice(dest: []u8, src: [:0]const u8) void {
+    const n = src.len + 1; // +1 for '\0'
+    std.debug.assert(dest.len >= n);
+    std.mem.copyForwards(u8, dest[0..n], src[0..n]);
+}
+pub fn copyZPointer(dest: []u8, src: [*:0]const u8) void {
+    copyZSlice(dest, zPointerToZSlice(src));
+}
+pub fn zPointerToZSlice(src: [*:0]const u8) [:0]const u8 {
+    const slice: [:0]const u8 = std.mem.span(src);
+    return slice;
 }

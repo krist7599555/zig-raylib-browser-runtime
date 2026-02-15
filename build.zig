@@ -42,8 +42,7 @@ pub fn build(b: *std.Build) void {
     // OUT: .js + .wasm FROM .a + raylib.a
     const emcc_linker: *std.Build.Step.Run = b.addSystemCommand(&.{"emcc"});
     {
-        emcc_linker.addArgs(&.{ "-o", "zig-out/lib/game.mjs" });
-        emcc_linker.addArgs(&.{ "-o", "zig-out/lib/game.js" });
+        emcc_linker.addArgs(&.{ "-o", "zig-out/lib/game.mjs" }); // also can be .js
         emcc_linker.addFileArg(lib_main.getEmittedBin());
         emcc_linker.addFileArg(lib_raylib.getEmittedBin());
         emcc_linker.addArgs(&.{"--no-entry"}); // no `fn main()`
@@ -57,12 +56,21 @@ pub fn build(b: *std.Build) void {
             join_list("EXPORTED_FUNCTIONS", &.{
                 "_game_init",
                 "_game_update",
+                "_game_set_title",
                 "_game_test_logging",
                 "_game_test_return_str",
                 "_game_test_a",
                 "_game_test_b",
                 "_game_test_c",
                 "_game_test_d",
+            }),
+        });
+        emcc_linker.addArgs(&.{
+            "-s",
+            join_list("EXPORTED_RUNTIME_METHODS", &.{
+                "stackAlloc",
+                "stringToUTF8",
+                "lengthBytesUTF8",
             }),
         });
     }

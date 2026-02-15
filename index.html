@@ -27,6 +27,29 @@
   }
   requestAnimationFrame(loop);
 
+  function game_set_title(str) {
+    const len = Mod.lengthBytesUTF8(str) + 1;
+    const ptr = Mod.stackAlloc(len); // auto free
+    Mod.stringToUTF8(str, ptr, len);
+    Mod._game_set_title(ptr);
+  }
+
+  const title_name = [
+    "Sam 123",
+    "Rocket Lucnher",
+    "MadDOG",
+    "RUN888",
+    "Ziggar",
+    "AnimeRuka"
+  ];
+
+  window.addEventListener("click",() => {
+    const title = title_name[Math.floor(Math.random() * title_name.length)];
+    game_set_title(title);
+  })
+  window.Mod = Mod;
+
+
 </script>
 </body>
 </html>
