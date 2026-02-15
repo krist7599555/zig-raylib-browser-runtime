@@ -1,4 +1,7 @@
 .zig-cache
-zig-out
+zig-out/***
+
+!zig-out/
+!zig-out/lib/
 !zig-out/lib/game.mjs
 !zig-out/lib/game.wasm
