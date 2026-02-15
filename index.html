@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+</head>
+<body>
+<script>
+  var Module = {
+    onRuntimeInitialized() {
+
+      // TEST
+      Module._game_test_logging();
+      console.log(UTF8ToString(Module._game_test_return_str()));
+      Module._game_test_a();
+      Module._game_test_b();
+      Module._game_test_c();
+      Module._game_test_d();
+      
+      // GAME
+
+      Module._game_init()
+      function loop() {
+        Module._game_update();
+        requestAnimationFrame(loop);
+      }
+      loop();
+    }
+  };
+</script>
+<script src="zig-out/lib/game.js"></script>
+</body>
+</html>
