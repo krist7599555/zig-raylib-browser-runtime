@@ -19,9 +19,16 @@ export fn game_init() void {
 }
 
 var time: f32 = 0;
+var camera = rl.Camera3D{
+    .position = .init(-5, 2, 0),
+    .target = .init(0, 0, 0),
+    .projection = .perspective,
+    .up = .init(0, 1, 0),
+    .fovy = 60,
+};
 export fn game_update(dt: f32) void {
     time += dt;
-    // _ = dt;
+
     rl.beginDrawing();
     defer rl.endDrawing();
 
@@ -29,6 +36,27 @@ export fn game_update(dt: f32) void {
 
     const w: i32 = rl.getScreenWidth();
     const h: i32 = rl.getScreenHeight();
+
+    {
+        rl.beginMode3D(camera);
+        defer rl.endMode3D();
+        rl.updateCamera(&camera, .orbital);
+
+        rl.drawCapsule(
+            .init(0, 0.3, 0),
+            .init(0, 1, 0),
+            0.3,
+            10,
+            10,
+            .green,
+        );
+
+        rl.drawGrid(50, 1);
+        rl.drawCube(.init(1, 0.5, 1), 1, 1, 1, .dark_gray);
+        rl.drawCube(.init(-1, 0.5, 1), 1, 1, 1, .dark_gray);
+        rl.drawCube(.init(-1, 0.5, -1), 1, 1, 1, .dark_gray);
+        rl.drawCube(.init(1, 0.5, -1), 1, 1, 1, .dark_gray);
+    }
 
     rl.drawText(
         &game_title,
@@ -39,10 +67,10 @@ export fn game_update(dt: f32) void {
     );
 
     var buf: [64:0]u8 = undefined;
-    const text = std.fmt.bufPrintZ(&buf, "dt = {d:.5}", .{dt}) catch "???";
+    const text = std.fmt.bufPrintZ(&buf, "dt = {d:.2}", .{dt}) catch "???";
 
-    rl.drawText(text, 10, 10, 20, .green);
-    rl.drawFPS(50, 50);
+    rl.drawFPS(10, 10);
+    rl.drawText(text, 120, 10, 20, .green);
 }
 
 export fn game_set_title(ptr: [*:0]const u8) void {
