@@ -5,8 +5,15 @@
 ![Screenshot](https://github.com/user-attachments/assets/dd71b28d-de73-4f80-8fcf-8fdbe018ef64)
 
 
+<div align="center">
+
+## 🎪 [**✨ TRY THE LIVE DEMO ✨**](https://krist7599555.github.io/zig-raylib-browser-runtime/)
+
+### 👆 Click to see Zig + Raylib running in your browser right now! 🚀
+
 [![GitHub](https://img.shields.io/badge/GitHub-krist7599555%2Fzig--raylib--browser--runtime-blue?logo=github)](https://github.com/krist7599555/zig-raylib-browser-runtime)
-[![Demo](https://img.shields.io/badge/🎪_Live_Demo-GitHub_Pages-success)](https://krist7599555.github.io/zig-raylib-browser-runtime/)
+
+</div>
 
 ---
 
