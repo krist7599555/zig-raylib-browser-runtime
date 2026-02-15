@@ -1,0 +1,6 @@
+[tools]
+# emsdk = "5.0.1"
+"asdf:mise-plugins/mise-emsdk" = "5.0.1"
+# emsdk/5.0.1/upstream/emscripten/emcc version 5.0.1 + clang 23.0.0?
+
+[plugins]

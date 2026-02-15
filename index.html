@@ -4,29 +4,29 @@
   <meta charset="utf-8" />
 </head>
 <body>
-<script>
-  var Module = {
-    onRuntimeInitialized() {
+<canvas id="canvas" width="800" height="800"></canvas>
 
-      // TEST
-      Module._game_test_logging();
-      console.log(UTF8ToString(Module._game_test_return_str()));
-      Module._game_test_a();
-      Module._game_test_b();
-      Module._game_test_c();
-      Module._game_test_d();
-      
-      // GAME
+<script type="module" async>
+  import Module from './zig-out/lib/game.mjs'
 
-      Module._game_init()
-      function loop() {
-        Module._game_update();
-        requestAnimationFrame(loop);
-      }
-      loop();
-    }
-  };
+  const Mod = await Module({
+    print: console.warn,
+    printErr: console.error,
+  });
+
+  Mod.canvas = document.getElementById("canvas");
+
+  Mod._game_init();
+
+  let pt = 0;
+  function loop(t) {
+    const dt = t - pt;
+    pt = t;
+    Mod._game_update(dt);
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+
 </script>
-<script src="zig-out/lib/game.js"></script>
 </body>
 </html>
