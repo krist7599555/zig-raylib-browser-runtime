@@ -32,7 +32,7 @@ export fn game_init() void {
     if (is_initialized) return;
     rl.initWindow(720, 480, "");
     rl.setTargetFPS(60);
-    game_set_title("Game Title");
+    game_set_title("Zig + Raylib in Browser !!");
     is_initialized = true;
 }
 
