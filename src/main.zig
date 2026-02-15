@@ -2,18 +2,19 @@ const std = @import("std");
 const rl = @import("raylib");
 const rg = @import("raygui");
 
-extern fn emscripten_log(flags: i32, msg: [*:0]const u8, ...) void;
+const EmscriptenLogFlag = enum(i32) {
+    console = 1, // EM_LOG_CONSOLE (1): Log to console.log.
+    warn    = 2, // EM_LOG_WARN (2): Log to console.warn.
+    err     = 4, // EM_LOG_ERROR (4): Log to console.error.
+    c_stack = 8, // EM_LOG_C_STACK (8): Include the C/C++ callstack.
+    js_stack = 16, // EM_LOG_JS_STACK (16): Include the JavaScript callstack.
+    demangle = 32, // EM_LOG_DEMANGLE (32): Demangle C++ function names.
+    _, // allow merge bitmask
+};
+extern fn emscripten_log(flags: EmscriptenLogFlag, msg: [*:0]const u8, ...) void;
 extern fn emscripten_console_log(msg: [*:0]const u8) void;
 
-var game_title: [100:0]u8 = undefined;
-
-export fn game_init() void {
-    rl.initWindow(720, 480, "");
-    rl.setTargetFPS(60);
-    game_set_title("Game Title");
-}
-
-var time: f32 = 0;
+// Global Mutable Var
 var camera = rl.Camera3D{
     .position = .init(-5, 2, 0),
     .target = .init(0, 0, 0),
@@ -22,8 +23,27 @@ var camera = rl.Camera3D{
     .fovy = 60,
 };
 var camera_mode: rl.CameraMode = .orbital;
-export fn game_update(dt: f32) void {
-    time += dt;
+var game_title: [100:0]u8 = undefined;
+var is_initialized = false;
+
+// Function
+
+export fn game_init() void {
+    if (is_initialized) return;
+    rl.initWindow(720, 480, "");
+    rl.setTargetFPS(60);
+    game_set_title("Game Title");
+    is_initialized = true;
+}
+
+export fn game_update() void {
+    if (!is_initialized) {
+        emscripten_log(.err, "Please Init Raylib before update");
+        return;
+    }
+    const dt = rl.getFrameTime();
+    const time = rl.getTime();
+
     rl.updateCamera(&camera, camera_mode);
 
     rl.beginDrawing();
@@ -43,14 +63,14 @@ export fn game_update(dt: f32) void {
         rl.drawCapsule(.init(0, 0.3, 0), .init(0, 1, 0), 0.3, 10, 10, .green);
 
         {
-            const cl: u8 = @as(u8, @intCast(@mod(@as(i32, @intFromFloat(@floor(time * 0.5))), 255)));
+            const color = @as(u8, @intFromFloat(time * 1000)) % 255;
             for (2..5) |di| {
-                const d = @as(f32, @floatFromInt(di));
-                const size = rl.Vector3.init(0.7, d - 1, 0.7);
-                rl.drawCubeV(.init(d, 0.5, d), size, .init(cl, 0, 255, 255));
-                rl.drawCubeV(.init(-d, 0.5, d), size, .init(0, cl, 255, 255));
-                rl.drawCubeV(.init(-d, 0.5, -d), size, .init(0, 255, cl, 255));
-                rl.drawCubeV(.init(d, 0.5, -d), size, .init(255, cl, 0, 255));
+                const ring = @as(f32, @floatFromInt(di));
+                const size = rl.Vector3.init(0.7, ring - 1, 0.7);
+                rl.drawCubeV(.init(ring, 0.5, ring), size, .init(color, 0, 255, 255));
+                rl.drawCubeV(.init(-ring, 0.5, ring), size, .init(0, color, 255, 255));
+                rl.drawCubeV(.init(-ring, 0.5, -ring), size, .init(0, 255, color, 255));
+                rl.drawCubeV(.init(ring, 0.5, -ring), size, .init(255, color, 0, 255));
             }
         }
     }
@@ -64,7 +84,7 @@ export fn game_update(dt: f32) void {
 
     // DRAW DT=???
     var dt_buf: [64:0]u8 = undefined;
-    const dt_str = std.fmt.bufPrintZ(&dt_buf, "dt={d:.2}", .{dt}) catch "???";
+    const dt_str = std.fmt.bufPrintZ(&dt_buf, "dt={d:.2} t={d:.2}", .{ dt, time }) catch "???";
     rl.drawText(dt_str, 120, 10, 20, .green);
 
     // DRAW "Change Cam Mode" button
@@ -80,48 +100,38 @@ export fn game_update(dt: f32) void {
     }
 }
 
-export fn game_set_title(ptr: [*:0]const u8) void {
-    const slice = zPointerToZSlice(ptr);
+export fn game_set_title(in: [*:0]const u8) void {
+    const slice = zPointerToZSlice(in);
     rl.setWindowTitle(slice);
     copyZSlice(&game_title, slice);
 }
-
-export fn game_test_logging() i32 {
-    emscripten_log(1, "Test log 1\x00");
-    emscripten_console_log("Test console.log");
-    return 775;
+export fn game_get_title(out: [*:0]u8) void {
+    const slice = zPointerToZSlice(&game_title);
+    copyZSlice(out, slice);
 }
 
-export fn game_test_return_str() [*:0]const u8 {
-    return "Test Return Str";
+export fn game_log_info() void {
+    emscripten_log(.console, "Log from Zig");
+    emscripten_log(.warn, "This is POC. API might change.");
+    emscripten_console_log("Main Point to execute raylib logic and event loop");
 }
 
-export fn game_test_a() f32 {
-    return 3.14;
-}
-export fn game_test_b() f32 {
-    return 3.14;
-}
-export fn game_test_c() f32 {
-    return 3.14;
-}
-export fn game_test_d() f32 {
-    return 3.14;
-}
+// Untility for \0 c_str convertion with slice
+// convert + copy
 
-pub fn copyZSlice(dest: []u8, src: [:0]const u8) void {
+fn copyZSlice(dest: [*]u8, src: [:0]const u8) void {
     const n = src.len + 1; // +1 for '\0'
-    std.debug.assert(dest.len >= n);
     std.mem.copyForwards(u8, dest[0..n], src[0..n]);
+    if (dest[n] != '\x00') unreachable;
 }
-pub fn copyZPointer(dest: []u8, src: [*:0]const u8) void {
+fn copyZPointer(dest: []u8, src: [*:0]const u8) void {
     copyZSlice(dest, zPointerToZSlice(src));
 }
-pub fn zPointerToZSlice(src: [*:0]const u8) [:0]const u8 {
+fn zPointerToZSlice(src: [*:0]const u8) [:0]const u8 {
     const slice: [:0]const u8 = std.mem.span(src);
     return slice;
 }
-pub fn zSliceToZPointer(src: [*:0]const u8) [:0]const u8 {
+fn zSliceToZPointer(src: [*:0]const u8) [:0]const u8 {
     const slice: [:0]const u8 = std.mem.span(src);
     return slice;
 }

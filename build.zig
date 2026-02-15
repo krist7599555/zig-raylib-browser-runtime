@@ -72,12 +72,8 @@ pub fn build(b: *std.Build) void {
                 "_game_init",
                 "_game_update",
                 "_game_set_title",
-                "_game_test_logging",
-                "_game_test_return_str",
-                "_game_test_a",
-                "_game_test_b",
-                "_game_test_c",
-                "_game_test_d",
+                "_game_get_title",
+                "_game_log_info",
             }),
         });
         emcc_linker.addArgs(&.{
@@ -85,6 +81,7 @@ pub fn build(b: *std.Build) void {
             join_list("EXPORTED_RUNTIME_METHODS", &.{
                 "stackAlloc",
                 "stringToUTF8",
+                "UTF8ToString",
                 "lengthBytesUTF8",
             }),
         });

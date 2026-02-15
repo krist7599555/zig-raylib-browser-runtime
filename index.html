@@ -5,48 +5,69 @@
   <meta charset="utf-8" />
 </head>
 <body>
+
 <canvas id="canvas" width="800" height="800"></canvas>
 <div>
-  <button onclick="window.setTitleFromPrompt()">Set Title</button>
+  <button id="btnSetTitle">Set Title:</button>
 </div>
-<script type="module" async>
-  import Module from './zig-out/lib/game.mjs'
 
-  const Mod = await Module({
-    print: console.warn,
+<script type="module" async>
+  import createGameModule from './zig-out/lib/game.mjs'
+
+  const Mod = await createGameModule({
+    print: console.info,
     printErr: console.error,
+    canvas: document.getElementById("canvas"),
   });
 
-  Mod.canvas = document.getElementById("canvas");
-
-  Mod._game_init();
-
-  let pt = 0;
-  function loop(t) {
-    const dt = t - pt;
-    pt = t;
-    Mod._game_update(dt);
-    requestAnimationFrame(loop);
-  }
-  requestAnimationFrame(loop);
-
-  function setTitle(str) {
-    const len = Mod.lengthBytesUTF8(str) + 1;
-    const ptr = Mod.stackAlloc(len); // auto free
-    Mod.stringToUTF8(str, ptr, len);
-    Mod._game_set_title(ptr);
-  }
-  
-  
-  window.Mod = Mod;
-  window.setTitleFromPrompt = function() {
-    const title = prompt("new title");
-    if (title) {
-      console.log("Apply Name", title)
-      setTitle(title)
+  const Game = {
+    init() {
+      Mod._game_init()
+    },
+    update() {
+      Mod._game_update();
+    },
+    logInfo() {
+      Mod._game_log_info()
+    },
+    setTitle(str) {
+      const len = Mod.lengthBytesUTF8(str) + 1;
+      const ptr = Mod.stackAlloc(len); // auto free
+      Mod.stringToUTF8(str, ptr, len);
+      Mod._game_set_title(ptr);
+    },
+    getTitle(str) {
+      const ptr = Mod.stackAlloc(1000); // auto free
+      Mod._game_get_title(ptr);
+      const out = Mod.UTF8ToString(ptr);
+      return out;
     }
   }
 
+
+  Game.logInfo()
+
+  Game.init()  
+  function loop() {
+    Game.update();
+    requestAnimationFrame(loop);
+  }
+  loop();
+
+  
+  window.Mod = Mod;
+  window.Game = Game;
+
+
+  const btnSetTitle = document.getElementById("btnSetTitle")
+  btnSetTitle.innerText = "Set Title: " + Game.getTitle();
+  btnSetTitle.addEventListener("click", () => {
+    const title = prompt("new title");
+    if (title) {
+      Game.setTitle(title)
+      btnSetTitle.innerText = "Set Title: " + Game.getTitle();
+    }
+  })
 </script>
 </body>
 </html>
