@@ -7,19 +7,29 @@ pub fn build(b: *std.Build) void {
         .cpu_arch = .wasm32,
         .os_tag = .emscripten,
     });
-    const optimize = b.standardOptimizeOption(.{
-        .preferred_optimize_mode = .ReleaseFast,
-    });
+    const optimize: std.builtin.OptimizeMode = .ReleaseFast;
 
+    const raylib_opt: rlz.Options = .{
+        .linkage = .static,
+        // .opengl_version = rlz.OpenglVersion.gles_2, // Use OpenGL 2.1 (requires importing raylib-zig's build script)
+        .platform = .glfw,
+    };
     const raylib_mod = b.dependency("raylib_zig", .{
         .target = target,
         .optimize = optimize,
+        .linkage = raylib_opt.linkage,
+        .opengl_version = .auto,
+        // .opengl_version = raylib_opt.opengl_version,
     });
 
     const lib_raylib: *std.Build.Step.Compile = raylib_mod.artifact("raylib");
     {
-        lib_raylib.root_module.addCMacro("PLATFORM_WEB", "1"); // fix raylib shader opengl -> webgl
-        lib_raylib.root_module.addCMacro("GRAPHICS_API_OPENGL_ES2", "1"); // fix raylib shader opengl -> webgl
+        raylib_mod.module("raylib").addCMacro("PLATFORM_WEB", "1"); // fix raylib shader opengl -> webgl
+        raylib_mod.module("raylib").addCMacro("GRAPHICS_API_OPENGL_ES2", "1"); // fix raylib shader opengl -> webgl
+    }
+    {
+        raylib_mod.module("raygui").addCMacro("PLATFORM_WEB", "1");
+        raylib_mod.module("raygui").addCMacro("GRAPHICS_API_OPENGL_ES2", "1");
     }
 
     const lib_main: *std.Build.Step.Compile = b.addLibrary(.{
@@ -34,6 +44,11 @@ pub fn build(b: *std.Build) void {
                     // when @import("raylib") will look to raylib.h
                     .name = "raylib",
                     .module = raylib_mod.module("raylib"),
+                },
+                .{
+                    // when @import("raylib") will look to raylib.h
+                    .name = "raygui",
+                    .module = raylib_mod.module("raygui"),
                 },
             },
         }),
@@ -77,12 +92,14 @@ pub fn build(b: *std.Build) void {
 
     // GRAPH
     // .js+.wasm require libgame.a, require raylib.a
+
     emcc_linker.step.dependOn(&lib_raylib.step);
     emcc_linker.step.dependOn(&lib_main.step);
 
     // WRITE (Optional)
     b.installArtifact(lib_main); // lib/libapp.a
     b.installArtifact(lib_raylib); // lib/libraylib.a
+    // b.installArtifact(lib_raygui); // lib/libraygui.a
 
     // install = require .js+.wams
     b.getInstallStep().dependOn(&emcc_linker.step);
