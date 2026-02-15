@@ -7,32 +7,21 @@ pub fn build(b: *std.Build) void {
         .cpu_arch = .wasm32,
         .os_tag = .emscripten,
     });
-    const optimize: std.builtin.OptimizeMode = .ReleaseFast;
+    // Prevent Error on Emcc
+    const optimize: std.builtin.OptimizeMode = .ReleaseFast; 
 
-    const raylib_opt: rlz.Options = .{
-        .linkage = .static,
-        // .opengl_version = rlz.OpenglVersion.gles_2, // Use OpenGL 2.1 (requires importing raylib-zig's build script)
-        .platform = .glfw,
-    };
     const raylib_mod = b.dependency("raylib_zig", .{
         .target = target,
         .optimize = optimize,
-        .linkage = raylib_opt.linkage,
+        // Partial(rlz.Options)
+        .linkage = .static,
         .opengl_version = .auto,
-        // .opengl_version = raylib_opt.opengl_version,
+        .platform = .glfw,
     });
 
-    const lib_raylib: *std.Build.Step.Compile = raylib_mod.artifact("raylib");
-    {
-        raylib_mod.module("raylib").addCMacro("PLATFORM_WEB", "1"); // fix raylib shader opengl -> webgl
-        raylib_mod.module("raylib").addCMacro("GRAPHICS_API_OPENGL_ES2", "1"); // fix raylib shader opengl -> webgl
-    }
-    {
-        raylib_mod.module("raygui").addCMacro("PLATFORM_WEB", "1");
-        raylib_mod.module("raygui").addCMacro("GRAPHICS_API_OPENGL_ES2", "1");
-    }
+    const lib_raylib = raylib_mod.artifact("raylib");
 
-    const lib_main: *std.Build.Step.Compile = b.addLibrary(.{
+    const lib_main = b.addLibrary(.{
         .name = "main",
         .linkage = .static,
         .root_module = b.createModule(.{
@@ -55,6 +44,7 @@ pub fn build(b: *std.Build) void {
     });
 
     // OUT: .js + .wasm FROM .a + raylib.a
+    // Real Output is from this step
     const emcc_linker: *std.Build.Step.Run = b.addSystemCommand(&.{"emcc"});
     {
         emcc_linker.addArgs(&.{ "-o", "zig-out/lib/game.mjs" }); // also can be .js
@@ -93,10 +83,9 @@ pub fn build(b: *std.Build) void {
     emcc_linker.step.dependOn(&lib_raylib.step);
     emcc_linker.step.dependOn(&lib_main.step);
 
-    // WRITE (Optional)
+    // WRITE (Optional) .a + .h
     b.installArtifact(lib_main); // lib/libapp.a
     b.installArtifact(lib_raylib); // lib/libraylib.a
-    // b.installArtifact(lib_raygui); // lib/libraygui.a
 
     // install = require .js+.wams
     b.getInstallStep().dependOn(&emcc_linker.step);
