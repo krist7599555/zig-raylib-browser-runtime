@@ -4,7 +4,7 @@ default:
 emsdk-init:
     #!/usr/bin/env bash
     set -e
-    # https://github.com/emscripten-core/emsdk
+    # Require install https://github.com/emscripten-core/emsdk
     emsdk activate latest
     source "$(which emsdk)_env.sh"
     emcc() {
