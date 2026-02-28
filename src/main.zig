@@ -4,8 +4,8 @@ const rg = @import("raygui");
 
 const EmscriptenLogFlag = enum(i32) {
     console = 1, // EM_LOG_CONSOLE (1): Log to console.log.
-    warn    = 2, // EM_LOG_WARN (2): Log to console.warn.
-    err     = 4, // EM_LOG_ERROR (4): Log to console.error.
+    warn = 2, // EM_LOG_WARN (2): Log to console.warn.
+    err = 4, // EM_LOG_ERROR (4): Log to console.error.
     c_stack = 8, // EM_LOG_C_STACK (8): Include the C/C++ callstack.
     js_stack = 16, // EM_LOG_JS_STACK (16): Include the JavaScript callstack.
     demangle = 32, // EM_LOG_DEMANGLE (32): Demangle C++ function names.
